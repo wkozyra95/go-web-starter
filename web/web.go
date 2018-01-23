@@ -4,22 +4,35 @@ package web
 import (
 	"net/http"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	conf "github.com/wkozyra95/go-web-starter/config"
-	"github.com/wkozyra95/go-web-starter/web/routes"
+	"github.com/wkozyra95/go-web-starter/model/db"
 )
 
-func NewRouter(config conf.Config) (http.Handler, error) {
-	router := mux.NewRouter()
+var log = conf.NamedLogger("web")
 
-	setupErr := routes.SetupHandler(config)
-	if setupErr != nil {
-		return nil, setupErr
+type serverContext struct {
+	config conf.Config
+	db     func() db.DB
+	jwt    jwtProvider
+}
+
+func NewRouter(config conf.Config) (http.Handler, error) {
+	dbCreator, dbErr := db.SetupDB(config)
+	if dbErr != nil {
+		log.Error(dbErr.Error())
+		return nil, dbErr
 	}
 
-	return handlers.CORS(
-		handlers.AllowedHeaders([]string{"content-type", "x-auth-token"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-	)(router), nil
+	context := serverContext{
+		config: config,
+		db:     dbCreator,
+	}
+
+	router, setupRoutesErr := setupRoutes(context, config)
+	if setupRoutesErr != nil {
+		log.Error(dbErr.Error())
+		return nil, setupRoutesErr
+	}
+
+	return router, nil
 }

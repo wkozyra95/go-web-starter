@@ -7,12 +7,15 @@ import (
 	"github.com/wkozyra95/go-web-starter/web"
 )
 
+var log = conf.NamedLogger("main")
+
 func main() {
 	config := conf.SetupConfig()
-
 	handler, handlerErr := web.NewRouter(config)
 	if handlerErr != nil {
+		log.Error(handlerErr.Error())
 		return
 	}
-	http.ListenAndServe(":8080")
+	log.Info("Serving content on port 8080")
+	http.ListenAndServe(":8080", handler)
 }

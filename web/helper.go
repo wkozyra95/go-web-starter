@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/wkozyra95/go-web-starter/errors"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -28,4 +29,23 @@ func decodeJSONRequest(r *http.Request, unpackObject interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func requestMalformedErr(msg string) error {
+	err := errors.NewMessageError(msg, http.StatusBadRequest)
+	err.Json["request"] = errors.TextError("request malformed")
+	return err
+}
+
+func handleRequestError(w http.ResponseWriter, err error) {
+	if err == nil {
+		return
+	}
+	serializableError, isSerializable := err.(errors.MessageError)
+	if !isSerializable {
+		log.Errorf("[Assert] should not happend %s", err.Error())
+		return
+	}
+
+	_ = writeJSONResponse(w, serializableError.Code, serializableError)
 }

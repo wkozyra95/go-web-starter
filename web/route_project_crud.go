@@ -1,13 +1,14 @@
 package web
 
 import (
+	"net/http"
+
 	"github.com/wkozyra95/go-web-starter/model"
 	"github.com/wkozyra95/go-web-starter/web/handler"
 	"gopkg.in/mgo.v2/bson"
-	"net/http"
 )
 
-func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
@@ -16,14 +17,14 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) 
 
 	projects, projectsErr := handler.ProjectGetAll(context)
 	if projectsErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return projectsErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusFound, projects)
+	return nil
 }
 
-func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
@@ -34,14 +35,14 @@ func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
 
 	project, projectErr := handler.ProjectGet(projectId, context)
 	if projectErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return projectErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusFound, project)
+	return nil
 }
 
-func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
@@ -50,14 +51,12 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
 	if decodeErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return decodeErr
 	}
 
 	projectId, projectErr := handler.ProjectCreate(project, context)
 	if projectErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return projectErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusFound, struct {
@@ -65,9 +64,10 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 	}{
 		ProjectId: projectId,
 	})
+	return nil
 }
 
-func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
@@ -79,21 +79,20 @@ func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
 	if decodeErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return decodeErr
 	}
 	project.Id = projectId
 
 	projectErr := handler.ProjectUpdate(project, context)
 	if projectErr != nil {
-		w.Write([]byte("Internal server error"))
-		w.WriteHeader(http.StatusInternalServerError)
+		return projectErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusOK, "")
+	return nil
 }
 
-func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
@@ -104,9 +103,9 @@ func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 
 	projectErr := handler.ProjectDelete(projectId, context)
 	if projectErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		return projectErr
 	}
 
-	_ = writeJSONResponse(w, http.StatusOK, "")
+	_ = writeJSONResponse(w, http.StatusOK, []byte{})
+	return nil
 }

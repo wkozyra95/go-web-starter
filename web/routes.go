@@ -18,22 +18,23 @@ type requestCtx struct {
 	chi    *chi.Context
 }
 
-type wrappedHandlerFunc = func(w http.ResponseWriter, r *http.Request, ctx requestCtx)
+type wrappedHandlerFunc = func(w http.ResponseWriter, r *http.Request, ctx requestCtx) error
 
 func setupRoutes(context serverContext, config conf.Config) (http.Handler, error) {
 	router := chi.NewRouter()
 	f := func(handler wrappedHandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			handler(w, r, requestCtx{
+			err := handler(w, r, requestCtx{
 				server: &context,
 				chi:    chi.RouteContext(r.Context()),
 			})
+			handleRequestError(w, err)
 		}
 	}
 
 	router.Route("/auth", func(router chi.Router) {
 		router.Post("/login", f(loginHandler))
-		router.Post("/register", f(loginHandler))
+		router.Post("/register", f(registerHandler))
 	})
 	router.Route("/projects", func(router chi.Router) {
 		routeRoot := "/"

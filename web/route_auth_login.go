@@ -6,27 +6,29 @@ import (
 	"github.com/wkozyra95/go-web-starter/web/handler"
 )
 
-func loginHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func loginHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	var loginRequest struct {
 		Username string `json="username"`
 		Password string `json="password"`
 	}
 	decodeErr := decodeJSONRequest(r, &loginRequest)
 	if decodeErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		return
+		return requestMalformedErr("register request malformed")
 	}
 	context := handler.ActionContext{
 		DB:     ctx.server.db(),
 		UserId: "",
 	}
 
-	token, loginErr := handler.UserLogin(loginRequest.Username, loginRequest.Password, context)
+	token, loginErr := handler.UserLogin(
+		loginRequest.Username,
+		loginRequest.Password,
+		ctx.server.jwt.generate,
+		context,
+	)
 	if loginErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		return
+		log.Warnf("login request failed [%s]", loginErr.Error())
+		return loginErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusOK, struct {
@@ -34,5 +36,5 @@ func loginHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
 	}{
 		Token: token,
 	})
-
+	return nil
 }

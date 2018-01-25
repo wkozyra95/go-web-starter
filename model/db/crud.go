@@ -5,13 +5,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const projectCollection = "project"
-const userCollection = "user"
-
-const PrimaryKey = "_id"
-const ProjectForeignKey = "projectId"
-const UserForeignKey = "userId"
-
 type Document struct {
 	Id        bson.ObjectId `bson:"_id"`
 	ProjectId bson.ObjectId `bson:"projectId"`

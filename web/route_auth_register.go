@@ -7,17 +7,15 @@ import (
 	"github.com/wkozyra95/go-web-starter/web/handler"
 )
 
-func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
+func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	var registerRequest struct {
-		Username string `json="username"`
-		Email    string `json="email"`
-		Password string `json="password"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	decodeErr := decodeJSONRequest(r, &registerRequest)
 	if decodeErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		return
+		return requestMalformedErr("register request malformed")
 	}
 
 	user := model.User{
@@ -31,11 +29,10 @@ func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) {
 
 	registerErr := handler.UserRegister(user, registerRequest.Password, context)
 	if registerErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		return
+		log.Warnf("register request failed [%s]", registerErr.Error())
+		return registerErr
 	}
 
-	_ = writeJSONResponse(w, http.StatusOK, "")
-
+	_ = writeJSONResponse(w, http.StatusOK, []byte{})
+	return nil
 }

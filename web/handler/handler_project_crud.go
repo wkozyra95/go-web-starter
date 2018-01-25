@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+
 	"github.com/wkozyra95/go-web-starter/model"
 	"github.com/wkozyra95/go-web-starter/model/db"
 	"gopkg.in/mgo.v2/bson"

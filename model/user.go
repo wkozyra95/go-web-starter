@@ -6,10 +6,10 @@ import (
 )
 
 type User struct {
-	Id           bson.ObjectId
-	Username     string
-	Email        string
-	PasswordHash string
+	Id           bson.ObjectId `bson:"_id"`
+	Username     string        `bson:"username"`
+	Email        string        `bson:"email"`
+	PasswordHash string        `bson:"password_hash"`
 }
 
 func (u *User) GeneratePasswordHash(password string) error {

@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"net/http"
+
+	"github.com/wkozyra95/go-web-starter/errors"
 	"github.com/wkozyra95/go-web-starter/model/db"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -22,4 +25,10 @@ func validateWriteRights(id bson.ObjectId, collection db.Collection, context Act
 		return false, documentErr
 	}
 	return document.UserId == context.UserId, nil
+}
+
+func internalServerErr(msg string) error {
+	err := errors.NewMessageError(msg, http.StatusInternalServerError)
+	err.Json["request"] = errors.TextError("internal")
+	return err
 }

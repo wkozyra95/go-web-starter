@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi"
 	conf "github.com/wkozyra95/go-web-starter/config"
+	"github.com/wkozyra95/go-web-starter/model/db"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 type requestCtx struct {
 	server *serverContext
 	chi    *chi.Context
+	db     db.DB
 }
 
 type wrappedHandlerFunc = func(w http.ResponseWriter, r *http.Request, ctx requestCtx) error
@@ -24,9 +26,12 @@ func setupRoutes(context serverContext, config conf.Config) (http.Handler, error
 	router := chi.NewRouter()
 	f := func(handler wrappedHandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			db := context.db()
+			defer db.Close()
 			err := handler(w, r, requestCtx{
 				server: &context,
 				chi:    chi.RouteContext(r.Context()),
+				db:     db,
 			})
 			handleRequestError(w, err)
 		}

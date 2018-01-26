@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	conf "github.com/wkozyra95/go-web-starter/config"
+	"github.com/wkozyra95/go-web-starter/errors"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -48,31 +49,45 @@ func (jp jwtProvider) middleware(next http.Handler) http.Handler {
 
 		token := r.Header.Get(jp.header)
 		if token == "" {
-			log.Warn("Missing auth token")
-			w.WriteHeader(http.StatusUnauthorized)
+			log.Info("Missing auth token")
+			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
+				"reason": errors.ErrNotLoggedIn,
+			})
 			return
 		}
 
 		parsed, parseErr := jwt.Parse(token, func(*jwt.Token) (interface{}, error) {
 			return jp.jwtKey, nil
 		})
+		if validationErr, ok := parseErr.(*jwt.ValidationError); ok &&
+			validationErr.Errors&jwt.ValidationErrorExpired != 0 {
+			log.Warn("token expired")
+			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
+				"reason": errors.ErrExpired,
+			})
+			return
+		}
 		if parseErr != nil {
 			log.Warn("Unable to parse token")
-			w.WriteHeader(http.StatusUnauthorized)
+			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
+				"reason": errors.ErrMalformed,
+			})
 			return
 		}
 
 		claims, assertTypeOk := parsed.Claims.(jwt.MapClaims)
-		if parsed.Valid && assertTypeOk {
-			idKey := contextUserId
-			idVal := claims["id"]
-
-			ctx := context.WithValue(r.Context(), idKey, idVal)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
+		if !parsed.Valid || !assertTypeOk {
 			log.Warn("Token is not valid")
-			w.WriteHeader(http.StatusUnauthorized)
+			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
+				"reason": errors.ErrMalformed,
+			})
 			return
 		}
+
+		idKey := contextUserId
+		idVal := claims["id"]
+
+		ctx := context.WithValue(r.Context(), idKey, idVal)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

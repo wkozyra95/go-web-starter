@@ -7,6 +7,7 @@ import (
 	"github.com/wkozyra95/go-web-starter/errors"
 	"github.com/wkozyra95/go-web-starter/model"
 	"github.com/wkozyra95/go-web-starter/model/db"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -15,36 +16,45 @@ func UserLogin(
 	password string,
 	generateToken func(bson.ObjectId) (string, error),
 	ctx ActionContext,
-) (string, error) {
+) (model.User, string, error) {
 	validateErr := userLoginValidate(username, password)
 	if validateErr != nil {
-		return "", validateErr
+		return model.User{}, "", validateErr
 	}
 
-	formErr := errors.EmptyMessageError()
+	formErr := errors.Empty()
+	formErr.Code = http.StatusBadRequest
 	formErr.Json["form"] = errors.TextError("Unknown combiantion of username and password")
+	formErr.Json["reason"] = errors.TextError(errors.ErrFormError)
 
 	user := model.User{}
 	userErr := ctx.DB.User().Find(bson.M{db.UserIdKeyUsername: username}).One(&user)
+	if userErr == mgo.ErrNotFound {
+		formErr.Msg = fmt.Sprintf("user (%s) not found", username, userErr.Error())
+		return user, "", formErr
+	}
 	if userErr != nil {
-		formErr.Msg = fmt.Sprintf("user don't exist [%s]", userErr.Error())
-		return "", formErr
+		return user, "", internalServerErr(
+			fmt.Sprintf("user (%s) find error [%s]", username, userErr.Error()),
+		)
 	}
 
 	if !user.ValidatePassword(password) {
 		formErr.Msg = "invalid password"
-		return "", formErr
+		return user, "", formErr
 	}
 
 	token, tokenErr := generateToken(user.Id)
 	if tokenErr != nil {
-		return "", internalServerErr(fmt.Sprintf("token error %s", tokenErr.Error()))
+		return user, "", internalServerErr(
+			fmt.Sprintf("generate token error %s", tokenErr.Error()),
+		)
 	}
-	return token, nil
+	return user, token, nil
 }
 
 func userLoginValidate(username, password string) error {
-	formErr := errors.NewMessageError("form error", http.StatusBadRequest)
+	formErr := errors.New("form error", http.StatusBadRequest)
 
 	if username == "" {
 		formErr.Json["username"] = errors.TextError("Username can't empty")

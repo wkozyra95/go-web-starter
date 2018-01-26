@@ -6,6 +6,16 @@ import (
 	"net/http"
 )
 
+const (
+	ErrNotFound            = "notfound"
+	ErrUnauthorized        = "unauthorized"
+	ErrNotLoggedIn         = "notloggedin"
+	ErrMalformed           = "malformed"
+	ErrExpired             = "expired"
+	ErrFormError           = "formerror"
+	ErrInternalServerError = "internal"
+)
+
 type SerializableError interface {
 	json.Marshaler
 	Error() string
@@ -37,7 +47,7 @@ type MessageError struct {
 	Json JsonError
 }
 
-func NewMessageError(message string, code int) MessageError {
+func New(message string, code int) MessageError {
 	return MessageError{
 		Msg:  message,
 		Code: code,
@@ -45,7 +55,17 @@ func NewMessageError(message string, code int) MessageError {
 	}
 }
 
-func EmptyMessageError() MessageError {
+func NewSimple(message string, code int, err string) MessageError {
+	return MessageError{
+		Msg:  message,
+		Code: code,
+		Json: JsonError(map[string]SerializableError{
+			"reason": TextError(err),
+		}),
+	}
+}
+
+func Empty() MessageError {
 	return MessageError{
 		Code: http.StatusBadRequest,
 		Json: JsonError(map[string]SerializableError{}),

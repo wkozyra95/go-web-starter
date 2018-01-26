@@ -60,6 +60,7 @@ func SetupDB(config conf.Config) (func() DB, error) {
 		log.Infof("Ensure indices  error: %s", ensureErr.Error())
 		return nil, ensureErr
 	}
+	session.SetSafe(&mgo.Safe{})
 	log.Info("Ensure success")
 
 	return func() DB {

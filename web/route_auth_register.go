@@ -15,7 +15,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) err
 	}
 	decodeErr := decodeJSONRequest(r, &registerRequest)
 	if decodeErr != nil {
-		return requestMalformedErr("register request malformed")
+		return requestMalformedErr("request register malformed")
 	}
 
 	user := model.User{
@@ -23,13 +23,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) err
 		Email:    registerRequest.Email,
 	}
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: "",
 	}
 
 	registerErr := handler.UserRegister(user, registerRequest.Password, context)
 	if registerErr != nil {
-		log.Warnf("register request failed [%s]", registerErr.Error())
+		log.Warnf("request register error [%s]", registerErr.Error())
 		return registerErr
 	}
 

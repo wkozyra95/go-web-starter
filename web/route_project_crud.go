@@ -11,12 +11,13 @@ import (
 func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: userId,
 	}
 
 	projects, projectsErr := handler.ProjectGetAll(context)
 	if projectsErr != nil {
+		log.Warnf("request GET projects error [%s]", projectsErr.Error())
 		return projectsErr
 	}
 
@@ -27,14 +28,15 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) 
 func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: userId,
 	}
-	projectIdBin := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdBin)
+	projectIdStr := ctx.chi.URLParam(paramProjectId)
+	projectId := bson.ObjectIdHex(projectIdStr)
 
 	project, projectErr := handler.ProjectGet(projectId, context)
 	if projectErr != nil {
+		log.Warnf("request GET project id(%s) error [%s]", projectIdStr, projectErr.Error())
 		return projectErr
 	}
 
@@ -45,17 +47,18 @@ func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) e
 func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: userId,
 	}
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
 	if decodeErr != nil {
-		return decodeErr
+		return requestMalformedErr("request CREATE project malformed")
 	}
 
 	projectId, projectErr := handler.ProjectCreate(project, context)
 	if projectErr != nil {
+		log.Warnf("request CREATE project error [%s]", projectErr.Error())
 		return projectErr
 	}
 
@@ -70,39 +73,41 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: userId,
 	}
-	projectIdBin := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdBin)
+	projectIdStr := ctx.chi.URLParam(paramProjectId)
+	projectId := bson.ObjectIdHex(projectIdStr)
 
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
 	if decodeErr != nil {
-		return decodeErr
+		return requestMalformedErr("request UPDATE project malformed")
 	}
 	project.Id = projectId
 
 	projectErr := handler.ProjectUpdate(project, context)
 	if projectErr != nil {
+		log.Warnf("request UPDATE project id(%s) error [%s]", projectIdStr, projectErr.Error())
 		return projectErr
 	}
 
-	_ = writeJSONResponse(w, http.StatusOK, "")
+	_ = writeJSONResponse(w, http.StatusOK, []byte{})
 	return nil
 }
 
 func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
 	userId := helperExtractUserId(r)
 	context := handler.ActionContext{
-		DB:     ctx.server.db(),
+		DB:     ctx.db,
 		UserId: userId,
 	}
-	projectIdBin := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdBin)
+	projectIdStr := ctx.chi.URLParam(paramProjectId)
+	projectId := bson.ObjectIdHex(projectIdStr)
 
 	projectErr := handler.ProjectDelete(projectId, context)
 	if projectErr != nil {
+		log.Warnf("request DELETE project id(%s) error [%s]", projectIdStr, projectErr.Error())
 		return projectErr
 	}
 

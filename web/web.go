@@ -23,9 +23,16 @@ func NewRouter(config conf.Config) (http.Handler, error) {
 		return nil, dbErr
 	}
 
+	jwt, jwtErr := newJwtProvider(config)
+	if jwtErr != nil {
+		log.Error(jwtErr.Error())
+		return nil, dbErr
+	}
+
 	context := serverContext{
 		config: config,
 		db:     dbCreator,
+		jwt:    jwt,
 	}
 
 	router, setupRoutesErr := setupRoutes(context, config)

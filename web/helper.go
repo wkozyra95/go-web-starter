@@ -32,9 +32,7 @@ func decodeJSONRequest(r *http.Request, unpackObject interface{}) error {
 }
 
 func requestMalformedErr(msg string) error {
-	err := errors.NewMessageError(msg, http.StatusBadRequest)
-	err.Json["request"] = errors.TextError("request malformed")
-	return err
+	return errors.NewSimple(msg, http.StatusBadRequest, errors.ErrMalformed)
 }
 
 func handleRequestError(w http.ResponseWriter, err error) {
@@ -43,7 +41,7 @@ func handleRequestError(w http.ResponseWriter, err error) {
 	}
 	serializableError, isSerializable := err.(errors.MessageError)
 	if !isSerializable {
-		log.Errorf("[Assert] should not happend %s", err.Error())
+		log.Errorf("[Assert] unhandled error [%s]", err.Error())
 		return
 	}
 

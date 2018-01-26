@@ -23,17 +23,18 @@ func UserRegister(user model.User, password string, ctx ActionContext) error {
 		},
 	}).All(&existingUsers)
 	if getErr != nil {
-		msg := fmt.Sprintf("db error %s", getErr.Error())
-		return internalServerErr(msg)
+		return internalServerErr(
+			fmt.Sprintf("users find error [%s]", getErr.Error()),
+		)
 	}
 	for _, existingUser := range existingUsers {
 		if existingUser.Email == user.Email {
-			matchErr := errors.NewMessageError("register email already used", http.StatusBadRequest)
+			matchErr := errors.New("email already used", http.StatusBadRequest)
 			matchErr.Json["email"] = errors.TextError("This email is already in use")
 			return matchErr
 		}
 		if existingUser.Username == user.Username {
-			matchErr := errors.NewMessageError("register username already used", http.StatusBadRequest)
+			matchErr := errors.New("username already used", http.StatusBadRequest)
 			matchErr.Json["username"] = errors.TextError("This username is already in use")
 			return matchErr
 		}
@@ -43,13 +44,15 @@ func UserRegister(user model.User, password string, ctx ActionContext) error {
 	user.GeneratePasswordHash(password)
 	insertErr := ctx.DB.User().Insert(user)
 	if insertErr != nil {
-		return insertErr
+		return internalServerErr(
+			fmt.Sprintf("user %s insert error [%s]", user.Id.Hex(), insertErr.Error()),
+		)
 	}
 	return nil
 }
 
 func userRegisterValidate(user model.User, password string) error {
-	formErr := errors.NewMessageError("form error", http.StatusBadRequest)
+	formErr := errors.New("form error", http.StatusBadRequest)
 
 	if user.Email == "" {
 		formErr.Json["email"] = errors.TextError("Email can't empty")

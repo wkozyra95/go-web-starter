@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	conf "github.com/wkozyra95/go-web-starter/config"
 	"github.com/wkozyra95/go-web-starter/web"
@@ -10,12 +12,23 @@ import (
 var log = conf.NamedLogger("main")
 
 func main() {
-	config := conf.SetupConfig()
-	handler, handlerErr := web.NewRouter(config)
-	if handlerErr != nil {
-		log.Error(handlerErr.Error())
-		return
+	config, configErr := conf.SetupConfig()
+	if configErr != nil {
+		log.Errorf("Config error [%s]", configErr.Error())
+		os.Exit(-1)
 	}
-	log.Info("Serving content on port 8080")
-	http.ListenAndServe(":3001", handler)
+
+	router, routerErr := web.NewRouter(config)
+	if routerErr != nil {
+		log.Errorf("Setup router error [%s]", configErr.Error())
+		os.Exit(-1)
+	}
+
+	portStr := fmt.Sprintf(":%d", config.Port)
+	log.Infof("Serving content on port %d", config.Port)
+	listenErr := http.ListenAndServe(portStr, router)
+	if listenErr != nil {
+		log.Error("Server crashed [%s]", listenErr.Error())
+		os.Exit(-1)
+	}
 }

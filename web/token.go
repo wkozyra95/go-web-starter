@@ -2,7 +2,7 @@ package web
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 
 type contextKeyType string
 
-const contextUserId contextKeyType = "userId"
+const contextUserID contextKeyType = "userId"
 
 type jwtProvider struct {
 	jwtKey []byte
@@ -84,7 +84,7 @@ func (jp jwtProvider) middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		idKey := contextUserId
+		idKey := contextUserID
 		idVal := claims["id"]
 
 		ctx := context.WithValue(r.Context(), idKey, idVal)

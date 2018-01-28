@@ -24,7 +24,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) err
 	}
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: "",
+		UserID: "",
 	}
 
 	registerErr := handler.UserRegister(user, registerRequest.Password, context)

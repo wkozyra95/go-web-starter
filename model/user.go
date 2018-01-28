@@ -5,13 +5,19 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// User ...
 type User struct {
-	Id           bson.ObjectId `json:"id" bson:"_id"`
-	Username     string        `json:"username", bson:"username"`
-	Email        string        `json:"email" bson:"email"`
-	PasswordHash string        `json:"-" bson:"password_hash"`
+	// ID ...
+	ID bson.ObjectId `json:"id" bson:"_id"`
+	// Username ...
+	Username string `json:"username" bson:"username"`
+	// Email ...
+	Email string `json:"email" bson:"email"`
+	// PasswordHash ...
+	PasswordHash string `json:"-" bson:"password_hash"`
 }
 
+// GeneratePasswordHash ...
 func (u *User) GeneratePasswordHash(password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -21,6 +27,7 @@ func (u *User) GeneratePasswordHash(password string) error {
 	return nil
 }
 
+// ValidatePassword ...
 func (u User) ValidatePassword(password string) bool {
 	hashedPassword := []byte(u.PasswordHash)
 	err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))

@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// NamedLogger creates named package logger.
 func NamedLogger(name string) logrus.Logger {
 	return logrus.Logger{
 		Out:       os.Stderr,

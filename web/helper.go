@@ -8,8 +8,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func helperExtractUserId(r *http.Request) bson.ObjectId {
-	return bson.ObjectIdHex(r.Context().Value(contextUserId).(string))
+func helperExtractUserID(r *http.Request) bson.ObjectId {
+	return bson.ObjectIdHex(r.Context().Value(contextUserID).(string))
 }
 
 func writeJSONResponse(w http.ResponseWriter, httpStatus int, body interface{}) error {

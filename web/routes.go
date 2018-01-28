@@ -1,3 +1,4 @@
+// Package web ...
 package web
 
 import (
@@ -10,8 +11,7 @@ import (
 )
 
 const (
-	paramProjectId = "projectId"
-	paramNoteId    = "noteId"
+	paramProjectID = "projectId"
 )
 
 type requestCtx struct {
@@ -43,14 +43,14 @@ func setupRoutes(context serverContext, config conf.Config) (http.Handler, error
 	})
 	router.Route("/projects", func(router chi.Router) {
 		routeRoot := "/"
-		routeId := fmt.Sprintf("/{%s}", paramProjectId)
+		routeID := fmt.Sprintf("/{%s}", paramProjectID)
 		router.Use(context.jwt.middleware)
 
 		router.Get(routeRoot, f(getProjectsHandler))
-		router.Get(routeId, f(getProjectHandler))
+		router.Get(routeID, f(getProjectHandler))
 		router.Post(routeRoot, f(createProjectHandler))
-		router.Put(routeId, f(updateProjectHandler))
-		router.Delete(routeId, f(deleteProjectHandler))
+		router.Put(routeID, f(updateProjectHandler))
+		router.Delete(routeID, f(deleteProjectHandler))
 	})
 	return router, nil
 }

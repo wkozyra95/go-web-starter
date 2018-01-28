@@ -11,7 +11,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// ProjectCreate ...
+// ProjectGet ...
 func ProjectGet(id bson.ObjectId, context ActionContext) (model.Project, error) {
 	accessOk, accessErr := validateReadRights(id, context.DB.Project(), context)
 	if accessErr == mgo.ErrNotFound {
@@ -34,7 +34,7 @@ func ProjectGet(id bson.ObjectId, context ActionContext) (model.Project, error) 
 		)
 	}
 	project := model.Project{}
-	getErr := context.DB.Project().FindId(id).One(&project)
+	getErr := context.DB.Project().FindID(id).One(&project)
 	if getErr == mgo.ErrNotFound {
 		log.Error("[Assert] unreachable code")
 		return model.Project{}, internalServerErr("unreachable code")
@@ -48,9 +48,10 @@ func ProjectGet(id bson.ObjectId, context ActionContext) (model.Project, error) 
 	return project, nil
 }
 
+// ProjectGetAll ...
 func ProjectGetAll(context ActionContext) ([]model.Project, error) {
 	projects := []model.Project{}
-	getErr := context.DB.Project().Find(bson.M{db.UserForeignKey: context.UserId}).All(&projects)
+	getErr := context.DB.Project().Find(bson.M{db.UserForeignKey: context.UserID}).All(&projects)
 	if getErr != nil {
 		return nil, internalServerErr(
 			fmt.Sprintf("projects all get error [%s]", getErr.Error()),
@@ -59,55 +60,58 @@ func ProjectGetAll(context ActionContext) ([]model.Project, error) {
 	return projects, nil
 }
 
+// ProjectCreate ...
 func ProjectCreate(project model.Project, context ActionContext) (bson.ObjectId, error) {
-	project.Id = bson.NewObjectId()
-	project.UserId = context.UserId
+	project.ID = bson.NewObjectId()
+	project.UserID = context.UserID
 	createErr := context.DB.Project().Insert(project)
 	if createErr != nil {
 		return "", internalServerErr(
-			fmt.Sprintf("project %s create error [%s]", project.Id.Hex(), createErr.Error()),
+			fmt.Sprintf("project %s create error [%s]", project.ID.Hex(), createErr.Error()),
 		)
 	}
-	return project.Id, nil
+	return project.ID, nil
 }
 
+// ProjectUpdate ...
 func ProjectUpdate(project model.Project, context ActionContext) error {
-	project.UserId = context.UserId
-	accessOk, accessErr := validateWriteRights(project.Id, context.DB.Project(), context)
+	project.UserID = context.UserID
+	accessOk, accessErr := validateWriteRights(project.ID, context.DB.Project(), context)
 	if accessErr == mgo.ErrNotFound {
 		return errors.NewSimple(
-			fmt.Sprintf("project %s notfound", project.Id.Hex()),
+			fmt.Sprintf("project %s notfound", project.ID.Hex()),
 			http.StatusNotFound,
 			errors.ErrNotFound,
 		)
 	}
 	if accessErr != nil {
 		return internalServerErr(
-			fmt.Sprintf("project %s access error [%s]", project.Id.Hex(), accessErr.Error()),
+			fmt.Sprintf("project %s access error [%s]", project.ID.Hex(), accessErr.Error()),
 		)
 	}
 	if !accessOk {
 		return errors.NewSimple(
-			fmt.Sprintf("project %s access unauthorized", project.Id.Hex()),
+			fmt.Sprintf("project %s access unauthorized", project.ID.Hex()),
 			http.StatusBadRequest,
 			errors.ErrUnauthorized,
 		)
 	}
 
-	updateErr := context.DB.Project().UpdateId(project.Id, project)
+	updateErr := context.DB.Project().UpdateID(project.ID, project)
 	if updateErr == mgo.ErrNotFound {
 		log.Error("[Assert] unreachable code")
 		return internalServerErr("unreachable code")
 	}
 	if updateErr != nil {
 		return internalServerErr(
-			fmt.Sprintf("project %s update error [%s]", project.Id.Hex(), updateErr.Error()),
+			fmt.Sprintf("project %s update error [%s]", project.ID.Hex(), updateErr.Error()),
 		)
 	}
 
 	return nil
 }
 
+// ProjectDelete ...
 func ProjectDelete(id bson.ObjectId, context ActionContext) error {
 	accessOk, accessErr := validateWriteRights(id, context.DB.Project(), context)
 	if accessErr == mgo.ErrNotFound {
@@ -129,7 +133,7 @@ func ProjectDelete(id bson.ObjectId, context ActionContext) error {
 			errors.ErrUnauthorized,
 		)
 	}
-	removeErr := context.DB.Project().RemoveId(id)
+	removeErr := context.DB.Project().RemoveID(id)
 	if removeErr == mgo.ErrNotFound {
 		log.Error("[Assert] unreachable code")
 		return internalServerErr("unreachable code")

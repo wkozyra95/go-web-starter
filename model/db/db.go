@@ -1,3 +1,4 @@
+// Package db implements database module.
 package db
 
 import (
@@ -8,43 +9,57 @@ import (
 
 var log = conf.NamedLogger("db")
 
+// OR query tag.
 const OR = "$or"
 
 const projectCollection = "project"
 const userCollection = "user"
 
+// PrimaryKey ...
 const PrimaryKey = "_id"
-const ProjectForeignKey = "projectId"
-const UserForeignKey = "userId"
-const UserIdKeyUsername = "username"
-const UserIdKeyEmail = "email"
 
+// ProjectForeignKey ...
+const ProjectForeignKey = "projectId"
+
+// UserForeignKey ...
+const UserForeignKey = "userId"
+
+// UserIDKeyUsername ...
+const UserIDKeyUsername = "username"
+
+// UserIDKeyEmail ...
+const UserIDKeyEmail = "email"
+
+// DB Database.
 type DB struct {
 	session *mgo.Session
 	User    func() Collection
 	Project func() Collection
 }
 
+// Close ...
 func (db DB) Close() {
 	db.session.Close()
 }
 
+// Collection ...
 type Collection interface {
 	Bulk() *mgo.Bulk
 	Find(query bson.M) *mgo.Query
-	FindId(id bson.ObjectId) *mgo.Query
+	FindID(id bson.ObjectId) *mgo.Query
 	Insert(docs ...interface{}) error
 	Pipe(pipeline interface{}) *mgo.Pipe
 	Remove(selector bson.M) error
 	RemoveAll(selector bson.M) (info *mgo.ChangeInfo, err error)
-	RemoveId(id bson.ObjectId) error
+	RemoveID(id bson.ObjectId) error
 	Update(selector bson.M, update interface{}) error
 	UpdateAll(selector bson.M, update interface{}) (info *mgo.ChangeInfo, err error)
-	UpdateId(id bson.ObjectId, update interface{}) error
+	UpdateID(id bson.ObjectId, update interface{}) error
 	Upsert(selector bson.M, update interface{}) (info *mgo.ChangeInfo, err error)
-	UpsertId(id bson.ObjectId, update interface{}) (info *mgo.ChangeInfo, err error)
+	UpsertID(id bson.ObjectId, update interface{}) (info *mgo.ChangeInfo, err error)
 }
 
+// SetupDB ...
 func SetupDB(config conf.Config) (func() DB, error) {
 	log.Info("Connecting to db ...")
 	session, sessionErr := mgo.Dial(config.DbURL)
@@ -88,7 +103,7 @@ func ensureDBIndices(db *mgo.Database) error {
 			Key: []string{PrimaryKey},
 		}),
 		db.C(userCollection).EnsureIndex(mgo.Index{
-			Key:    []string{UserIdKeyUsername},
+			Key:    []string{UserIDKeyUsername},
 			Unique: true,
 		}),
 		db.C(projectCollection).EnsureIndex(mgo.Index{

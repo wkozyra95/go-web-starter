@@ -18,7 +18,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error 
 	}
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: "",
+		UserID: "",
 	}
 
 	user, token, loginErr := handler.UserLogin(

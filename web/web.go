@@ -16,6 +16,7 @@ type serverContext struct {
 	jwt    jwtProvider
 }
 
+// NewRouter ...
 func NewRouter(config conf.Config) (http.Handler, error) {
 	dbCreator, dbErr := db.SetupDB(config)
 	if dbErr != nil {

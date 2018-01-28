@@ -4,7 +4,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Project ...
 type Project struct {
-	Id     bson.ObjectId `json:"id" bson:"_id"`
-	UserId bson.ObjectId `json:"userId" bson:"userId"`
+	// ID ...
+	ID bson.ObjectId `json:"id" bson:"_id"`
+	// UserID ...
+	UserID bson.ObjectId `json:"userId" bson:"userId"`
 }

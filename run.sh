@@ -47,6 +47,7 @@ elif [ "$1" = "setup" ]; then
     go get -u github.com/golang/dep/cmd/dep
     go get -u github.com/alecthomas/gometalinter
     go get -u github.com/codegangsta/gin
+    gometalinter --install --force
 else
     echo "\
 Usage: $0 COMMAND [ARGS]

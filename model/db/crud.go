@@ -5,10 +5,11 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Document struct used to extract id form mongo documents.
 type Document struct {
-	Id        bson.ObjectId `bson:"_id"`
-	ProjectId bson.ObjectId `bson:"projectId"`
-	UserId    bson.ObjectId `bson:"userId"`
+	ID        bson.ObjectId `bson:"_id"`
+	ProjectID bson.ObjectId `bson:"projectId"`
+	UserID    bson.ObjectId `bson:"userId"`
 }
 
 type collection struct {
@@ -21,7 +22,7 @@ func (c collection) Bulk() *mgo.Bulk {
 func (c collection) Find(query bson.M) *mgo.Query {
 	return c.collection.Find(query)
 }
-func (c collection) FindId(id bson.ObjectId) *mgo.Query {
+func (c collection) FindID(id bson.ObjectId) *mgo.Query {
 	return c.collection.FindId(id)
 }
 func (c collection) Insert(docs ...interface{}) error {
@@ -36,7 +37,7 @@ func (c collection) Remove(selector bson.M) error {
 func (c collection) RemoveAll(selector bson.M) (info *mgo.ChangeInfo, err error) {
 	return c.collection.RemoveAll(selector)
 }
-func (c collection) RemoveId(id bson.ObjectId) error {
+func (c collection) RemoveID(id bson.ObjectId) error {
 	return c.collection.RemoveId(id)
 }
 func (c collection) Update(selector bson.M, update interface{}) error {
@@ -45,12 +46,12 @@ func (c collection) Update(selector bson.M, update interface{}) error {
 func (c collection) UpdateAll(selector bson.M, update interface{}) (info *mgo.ChangeInfo, err error) {
 	return c.collection.UpdateAll(selector, update)
 }
-func (c collection) UpdateId(id bson.ObjectId, update interface{}) error {
+func (c collection) UpdateID(id bson.ObjectId, update interface{}) error {
 	return c.collection.UpdateId(id, update)
 }
 func (c collection) Upsert(selector bson.M, update interface{}) (info *mgo.ChangeInfo, err error) {
 	return c.collection.Upsert(selector, update)
 }
-func (c collection) UpsertId(id bson.ObjectId, update interface{}) (info *mgo.ChangeInfo, err error) {
+func (c collection) UpsertID(id bson.ObjectId, update interface{}) (info *mgo.ChangeInfo, err error) {
 	return c.collection.UpsertId(id, update)
 }

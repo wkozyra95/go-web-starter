@@ -11,6 +11,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// UserLogin ...
 func UserLogin(
 	username string,
 	password string,
@@ -24,13 +25,13 @@ func UserLogin(
 
 	formErr := errors.Empty()
 	formErr.Code = http.StatusBadRequest
-	formErr.Json["form"] = errors.TextError("Unknown combiantion of username and password")
-	formErr.Json["reason"] = errors.TextError(errors.ErrFormError)
+	formErr.JSON["form"] = errors.TextError("Unknown combiantion of username and password")
+	formErr.JSON["reason"] = errors.TextError(errors.ErrFormError)
 
 	user := model.User{}
-	userErr := ctx.DB.User().Find(bson.M{db.UserIdKeyUsername: username}).One(&user)
+	userErr := ctx.DB.User().Find(bson.M{db.UserIDKeyUsername: username}).One(&user)
 	if userErr == mgo.ErrNotFound {
-		formErr.Msg = fmt.Sprintf("user (%s) not found", username, userErr.Error())
+		formErr.Msg = fmt.Sprintf("user (%s) not found", username)
 		return user, "", formErr
 	}
 	if userErr != nil {
@@ -44,7 +45,7 @@ func UserLogin(
 		return user, "", formErr
 	}
 
-	token, tokenErr := generateToken(user.Id)
+	token, tokenErr := generateToken(user.ID)
 	if tokenErr != nil {
 		return user, "", internalServerErr(
 			fmt.Sprintf("generate token error %s", tokenErr.Error()),
@@ -57,12 +58,12 @@ func userLoginValidate(username, password string) error {
 	formErr := errors.New("form error", http.StatusBadRequest)
 
 	if username == "" {
-		formErr.Json["username"] = errors.TextError("Username can't empty")
+		formErr.JSON["username"] = errors.TextError("Username can't empty")
 	}
 	if password == "" {
-		formErr.Json["password"] = errors.TextError("Password can't empty")
+		formErr.JSON["password"] = errors.TextError("Password can't empty")
 	}
-	if len(formErr.Json) > 0 {
+	if len(formErr.JSON) > 0 {
 		return formErr
 	}
 	return nil

@@ -1,4 +1,4 @@
-// Package config ...
+// Package config implements configuration of application.
 package config
 
 import (
@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Config ...
+// Config contains basic values controlling app.
 type Config struct {
 	DbURL string
 	Port  int64
@@ -15,6 +15,7 @@ type Config struct {
 
 var log = NamedLogger("web")
 
+// SetupConfig reads config and creates Confid struct.
 func SetupConfig() (Config, error) {
 	config := Config{}
 	config.DbURL = os.Getenv("DB_URL")

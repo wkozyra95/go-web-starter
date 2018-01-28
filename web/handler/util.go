@@ -11,21 +11,21 @@ import (
 
 func validateReadRights(id bson.ObjectId, collection db.Collection, context ActionContext) (bool, error) {
 	document := db.Document{}
-	documentErr := collection.FindId(id).One(&document)
+	documentErr := collection.FindID(id).One(&document)
 	if documentErr != nil {
 		return false, documentErr
 	}
 
-	return document.UserId == context.UserId, nil
+	return document.UserID == context.UserID, nil
 }
 
 func validateWriteRights(id bson.ObjectId, collection db.Collection, context ActionContext) (bool, error) {
 	document := db.Document{}
-	documentErr := collection.FindId(id).One(&document)
+	documentErr := collection.FindID(id).One(&document)
 	if documentErr != nil {
 		return false, documentErr
 	}
-	return document.UserId == context.UserId, nil
+	return document.UserID == context.UserID, nil
 }
 
 func internalServerErr(msg string) error {

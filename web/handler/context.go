@@ -5,7 +5,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// ActionContext ...
 type ActionContext struct {
 	DB     db.DB
-	UserId bson.ObjectId
+	UserID bson.ObjectId
 }

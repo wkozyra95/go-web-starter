@@ -28,7 +28,7 @@ func main() {
 	log.Infof("Serving content on port %d", config.Port)
 	listenErr := http.ListenAndServe(portStr, router)
 	if listenErr != nil {
-		log.Error("Server crashed [%s]", listenErr.Error())
+		log.Errorf("Server crashed [%s]", listenErr.Error())
 		os.Exit(-1)
 	}
 }

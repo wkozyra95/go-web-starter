@@ -9,10 +9,10 @@ import (
 )
 
 func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userId := helperExtractUserId(r)
+	userID := helperExtractUserID(r)
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: userId,
+		UserID: userID,
 	}
 
 	projects, projectsErr := handler.ProjectGetAll(context)
@@ -26,17 +26,17 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) 
 }
 
 func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userId := helperExtractUserId(r)
+	userID := helperExtractUserID(r)
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: userId,
+		UserID: userID,
 	}
-	projectIdStr := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdStr)
+	projectIDStr := ctx.chi.URLParam(paramProjectID)
+	projectID := bson.ObjectIdHex(projectIDStr)
 
-	project, projectErr := handler.ProjectGet(projectId, context)
+	project, projectErr := handler.ProjectGet(projectID, context)
 	if projectErr != nil {
-		log.Warnf("request GET project id(%s) error [%s]", projectIdStr, projectErr.Error())
+		log.Warnf("request GET project id(%s) error [%s]", projectIDStr, projectErr.Error())
 		return projectErr
 	}
 
@@ -45,10 +45,10 @@ func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) e
 }
 
 func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userId := helperExtractUserId(r)
+	userID := helperExtractUserID(r)
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: userId,
+		UserID: userID,
 	}
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
@@ -56,39 +56,39 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 		return requestMalformedErr("request CREATE project malformed")
 	}
 
-	projectId, projectErr := handler.ProjectCreate(project, context)
+	projectID, projectErr := handler.ProjectCreate(project, context)
 	if projectErr != nil {
 		log.Warnf("request CREATE project error [%s]", projectErr.Error())
 		return projectErr
 	}
 
 	_ = writeJSONResponse(w, http.StatusFound, struct {
-		ProjectId bson.ObjectId `json:"projectId"`
+		ProjectID bson.ObjectId `json:"projectId"`
 	}{
-		ProjectId: projectId,
+		ProjectID: projectID,
 	})
 	return nil
 }
 
 func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userId := helperExtractUserId(r)
+	userID := helperExtractUserID(r)
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: userId,
+		UserID: userID,
 	}
-	projectIdStr := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdStr)
+	projectIDStr := ctx.chi.URLParam(paramProjectID)
+	projectID := bson.ObjectIdHex(projectIDStr)
 
 	var project model.Project
 	decodeErr := decodeJSONRequest(r, &project)
 	if decodeErr != nil {
 		return requestMalformedErr("request UPDATE project malformed")
 	}
-	project.Id = projectId
+	project.ID = projectID
 
 	projectErr := handler.ProjectUpdate(project, context)
 	if projectErr != nil {
-		log.Warnf("request UPDATE project id(%s) error [%s]", projectIdStr, projectErr.Error())
+		log.Warnf("request UPDATE project id(%s) error [%s]", projectIDStr, projectErr.Error())
 		return projectErr
 	}
 
@@ -97,17 +97,17 @@ func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx
 }
 
 func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userId := helperExtractUserId(r)
+	userID := helperExtractUserID(r)
 	context := handler.ActionContext{
 		DB:     ctx.db,
-		UserId: userId,
+		UserID: userID,
 	}
-	projectIdStr := ctx.chi.URLParam(paramProjectId)
-	projectId := bson.ObjectIdHex(projectIdStr)
+	projectIDStr := ctx.chi.URLParam(paramProjectID)
+	projectID := bson.ObjectIdHex(projectIDStr)
 
-	projectErr := handler.ProjectDelete(projectId, context)
+	projectErr := handler.ProjectDelete(projectID, context)
 	if projectErr != nil {
-		log.Warnf("request DELETE project id(%s) error [%s]", projectIdStr, projectErr.Error())
+		log.Warnf("request DELETE project id(%s) error [%s]", projectIDStr, projectErr.Error())
 		return projectErr
 	}
 

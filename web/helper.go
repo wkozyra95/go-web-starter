@@ -1,15 +1,61 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"runtime/debug"
 
-	"github.com/wkozyra95/go-web-starter/errors"
+	"github.com/go-chi/chi"
+	"github.com/wkozyra95/go-web-starter/model/mongo"
 	"gopkg.in/mgo.v2/bson"
 )
 
-func helperExtractUserID(r *http.Request) bson.ObjectId {
-	return bson.ObjectIdHex(r.Context().Value(contextUserID).(string))
+type contextKeyType string
+
+const contextUserIDKey contextKeyType = "userId"
+const contextDBSessionKey contextKeyType = "dbSession"
+
+func extractDBSession(ctx context.Context) mongo.DB {
+	dbSessionObj := ctx.Value(contextDBSessionKey)
+	if dbSessionObj == nil {
+		log.Error("[ASSERT] Missing db session in context")
+		debug.PrintStack()
+	}
+	dbSession, assertOk := dbSessionObj.(mongo.DB)
+	if !assertOk {
+		log.Error("[ASSERT] Wrong type for db session")
+		debug.PrintStack()
+	}
+	return dbSession
+}
+
+func extractUserId(ctx context.Context) bson.ObjectId {
+	userIdObj := ctx.Value(contextUserIDKey)
+	if userIdObj == nil {
+		return ""
+	}
+	userId, assertOk := userIdObj.(bson.ObjectId)
+	if !assertOk {
+		log.Errorf("[ASSERT] Wrong type for userId in contex [%+v]", userIdObj)
+		debug.PrintStack()
+	}
+	return userId
+}
+
+func extractURLParamIdContext(ctx context.Context, name string) bson.ObjectId {
+	chiContext := chi.RouteContext(ctx)
+	stringId := chiContext.URLParam(name)
+	id, idErr := mongo.ConvertToObjectId(stringId)
+	if idErr != nil {
+		panic(fmt.Errorf("malformed %s", name))
+	}
+	return id
+}
+
+func extractProjectId(ctx context.Context) bson.ObjectId {
+	return extractURLParamIdContext(ctx, "projectId")
 }
 
 func writeJSONResponse(w http.ResponseWriter, httpStatus int, body interface{}) error {
@@ -31,19 +77,6 @@ func decodeJSONRequest(r *http.Request, unpackObject interface{}) error {
 	return nil
 }
 
-func requestMalformedErr(msg string) error {
-	return errors.NewSimple(msg, http.StatusBadRequest, errors.ErrMalformed)
-}
-
-func handleRequestError(w http.ResponseWriter, err error) {
-	if err == nil {
-		return
-	}
-	serializableError, isSerializable := err.(errors.MessageError)
-	if !isSerializable {
-		log.Errorf("[Assert] unhandled error [%s]", err.Error())
-		return
-	}
-
-	_ = writeJSONResponse(w, serializableError.Code, serializableError)
+func handleRequestErr(w http.ResponseWriter, err error) {
+	_ = writeJSONResponse(w, http.StatusBadRequest, err.Error())
 }

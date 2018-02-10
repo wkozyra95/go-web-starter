@@ -16,11 +16,11 @@ type Config struct {
 var log = NamedLogger("web")
 
 // SetupConfig reads config and creates Confid struct.
-func SetupConfig() (Config, error) {
+func SetupConfig() (*Config, error) {
 	config := Config{}
 	config.DbURL = os.Getenv("DB_URL")
 	if config.DbURL == "" {
-		return config, fmt.Errorf("Missing DB_URL environment variable")
+		return &config, fmt.Errorf("Missing DB_URL environment variable")
 	}
 
 	port := os.Getenv("BACKEND_PORT")
@@ -33,6 +33,6 @@ func SetupConfig() (Config, error) {
 		)
 		config.Port = 8080
 	}
-	return config, nil
+	return &config, nil
 
 }

@@ -2,55 +2,35 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	conf "github.com/wkozyra95/go-web-starter/config"
-	"github.com/wkozyra95/go-web-starter/model/db"
+	"github.com/wkozyra95/go-web-starter/model/mongo"
 )
 
-const (
-	paramProjectID = "projectId"
-)
-
-type requestCtx struct {
-	server *serverContext
-	chi    *chi.Context
-	db     db.DB
+type handler struct {
+	jwt           *jwtProvider
+	config        *conf.Config
+	dbCreatorFunc func() mongo.DB
 }
 
-type wrappedHandlerFunc = func(w http.ResponseWriter, r *http.Request, ctx requestCtx) error
-
-func setupRoutes(context serverContext, config conf.Config) (http.Handler, error) {
+func setupRoutes(h *handler, db dbProvider) (http.Handler, error) {
 	router := chi.NewRouter()
-	f := func(handler wrappedHandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			db := context.db()
-			defer db.Close()
-			err := handler(w, r, requestCtx{
-				server: &context,
-				chi:    chi.RouteContext(r.Context()),
-				db:     db,
-			})
-			handleRequestError(w, err)
-		}
-	}
 
+	router.Use(db.middleware)
 	router.Route("/auth", func(router chi.Router) {
-		router.Post("/login", f(loginHandler))
-		router.Post("/register", f(registerHandler))
+		router.Post("/login", h.loginHandler)
+		router.Post("/register", h.registerHandler)
 	})
 	router.Route("/projects", func(router chi.Router) {
-		routeRoot := "/"
-		routeID := fmt.Sprintf("/{%s}", paramProjectID)
-		router.Use(context.jwt.middleware)
+		router.Use(h.jwt.middleware)
 
-		router.Get(routeRoot, f(getProjectsHandler))
-		router.Get(routeID, f(getProjectHandler))
-		router.Post(routeRoot, f(createProjectHandler))
-		router.Put(routeID, f(updateProjectHandler))
-		router.Delete(routeID, f(deleteProjectHandler))
+		router.Get("/", h.getProjectsHandler)
+		router.Get("/{projectId}", h.getProjectHandler)
+		router.Post("/", h.createProjectHandler)
+		router.Put("/{projectId}", h.updateProjectHandler)
+		router.Delete("/{projectId}", h.deleteProjectHandler)
 	})
 	return router, nil
 }

@@ -1,5 +1,5 @@
 // Package db implements database module.
-package db
+package mongo
 
 import (
 	conf "github.com/wkozyra95/go-web-starter/config"
@@ -60,7 +60,7 @@ type Collection interface {
 }
 
 // SetupDB ...
-func SetupDB(config conf.Config) (func() DB, error) {
+func SetupDB(config *conf.Config) (func() DB, error) {
 	log.Info("Connecting to db ...")
 	session, sessionErr := mgo.Dial(config.DbURL)
 	if sessionErr != nil {

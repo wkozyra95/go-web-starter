@@ -3,114 +3,115 @@ package web
 import (
 	"net/http"
 
+	"github.com/wkozyra95/go-web-starter/errors"
 	"github.com/wkozyra95/go-web-starter/model"
-	"github.com/wkozyra95/go-web-starter/web/handler"
+	"github.com/wkozyra95/go-web-starter/model/mongo"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-func getProjectsHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userID := helperExtractUserID(r)
-	context := handler.ActionContext{
-		DB:     ctx.db,
-		UserID: userID,
-	}
+func (h *handler) getProjectsHandler(w http.ResponseWriter, r *http.Request) {
+	userId := extractUserId(r.Context())
+	db := extractDBSession(r.Context())
 
-	projects, projectsErr := handler.ProjectGetAll(context)
+	projects := []mongo.Project{}
+	projectsErr := db.Project().Find(bson.M{
+		mongo.UserForeignKey: userId,
+	}).All(&projects)
+	if projectsErr == mgo.ErrNotFound {
+		handleRequestErr(w, errors.NotFound)
+		return
+	}
 	if projectsErr != nil {
-		log.Warnf("request GET projects error [%s]", projectsErr.Error())
-		return projectsErr
+		handleRequestErr(w, errors.InternalServerError)
+		return
 	}
 
-	_ = writeJSONResponse(w, http.StatusFound, projects)
-	return nil
+	_ = writeJSONResponse(w, http.StatusOK, projects)
 }
 
-func getProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userID := helperExtractUserID(r)
-	context := handler.ActionContext{
-		DB:     ctx.db,
-		UserID: userID,
-	}
-	projectIDStr := ctx.chi.URLParam(paramProjectID)
-	projectID := bson.ObjectIdHex(projectIDStr)
+func (h *handler) getProjectHandler(w http.ResponseWriter, r *http.Request) {
+	userId := extractUserId(r.Context())
+	db := extractDBSession(r.Context())
+	projectId := extractProjectId(r.Context())
 
-	project, projectErr := handler.ProjectGet(projectID, context)
+	project := mongo.Project{}
+	projectErr := db.Project().FindID(projectId).One(&project)
+	if projectErr == mgo.ErrNotFound {
+		handleRequestErr(w, errors.NotFound)
+		return
+	}
 	if projectErr != nil {
-		log.Warnf("request GET project id(%s) error [%s]", projectIDStr, projectErr.Error())
-		return projectErr
+		handleRequestErr(w, errors.InternalServerError)
+		return
+	}
+	if project.UserID != userId {
+		handleRequestErr(w, errors.Unauthorized)
+		return
 	}
 
-	_ = writeJSONResponse(w, http.StatusFound, project)
-	return nil
+	_ = writeJSONResponse(w, http.StatusOK, project)
 }
 
-func createProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userID := helperExtractUserID(r)
-	context := handler.ActionContext{
-		DB:     ctx.db,
-		UserID: userID,
-	}
-	var project model.Project
-	decodeErr := decodeJSONRequest(r, &project)
+func (h *handler) createProjectHandler(w http.ResponseWriter, r *http.Request) {
+	userId := extractUserId(r.Context())
+	db := extractDBSession(r.Context())
+
+	projectInput := projectCreateInput(model.Project{})
+	decodeErr := decodeJSONRequest(r, &projectInput)
 	if decodeErr != nil {
-		return requestMalformedErr("request CREATE project malformed")
+		handleRequestErr(w, errors.Malformed)
+		return
 	}
 
-	projectID, projectErr := handler.ProjectCreate(project, context)
-	if projectErr != nil {
-		log.Warnf("request CREATE project error [%s]", projectErr.Error())
-		return projectErr
+	if err := projectInput.validate(); err != nil {
+		handleRequestErr(w, err)
+		return
 	}
 
-	_ = writeJSONResponse(w, http.StatusFound, struct {
-		ProjectID bson.ObjectId `json:"projectId"`
+	project := projectInput.createProject(userId)
+	insertErr := db.Project().Insert(project)
+	if insertErr != nil {
+		handleRequestErr(w, errors.InternalServerError)
+		return
+	}
+
+	_ = writeJSONResponse(w, http.StatusCreated, struct {
+		ID bson.ObjectId `json:"id"`
+		model.Project
 	}{
-		ProjectID: projectID,
+		ID:      project.ID,
+		Project: project.Project,
 	})
+}
+
+type projectCreateInput model.Project
+
+func (pc projectCreateInput) validate() error {
 	return nil
 }
 
-func updateProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userID := helperExtractUserID(r)
-	context := handler.ActionContext{
-		DB:     ctx.db,
-		UserID: userID,
+func (pc projectCreateInput) createProject(userId bson.ObjectId) mongo.Project {
+	return mongo.Project{
+		Project: model.Project(pc),
+		ID:      bson.NewObjectId(),
+		UserID:  userId,
 	}
-	projectIDStr := ctx.chi.URLParam(paramProjectID)
-	projectID := bson.ObjectIdHex(projectIDStr)
-
-	var project model.Project
-	decodeErr := decodeJSONRequest(r, &project)
-	if decodeErr != nil {
-		return requestMalformedErr("request UPDATE project malformed")
-	}
-	project.ID = projectID
-
-	projectErr := handler.ProjectUpdate(project, context)
-	if projectErr != nil {
-		log.Warnf("request UPDATE project id(%s) error [%s]", projectIDStr, projectErr.Error())
-		return projectErr
-	}
-
-	_ = writeJSONResponse(w, http.StatusOK, []byte{})
-	return nil
 }
 
-func deleteProjectHandler(w http.ResponseWriter, r *http.Request, ctx requestCtx) error {
-	userID := helperExtractUserID(r)
-	context := handler.ActionContext{
-		DB:     ctx.db,
-		UserID: userID,
-	}
-	projectIDStr := ctx.chi.URLParam(paramProjectID)
-	projectID := bson.ObjectIdHex(projectIDStr)
-
-	projectErr := handler.ProjectDelete(projectID, context)
-	if projectErr != nil {
-		log.Warnf("request DELETE project id(%s) error [%s]", projectIDStr, projectErr.Error())
-		return projectErr
-	}
+func (h *handler) updateProjectHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = writeJSONResponse(w, http.StatusOK, []byte{})
-	return nil
+}
+
+type projectUpdateInput struct {
+	Set struct {
+		model.Project
+	} `json:"set"`
+	Delete []string `json:"delete"`
+}
+
+func (h *handler) deleteProjectHandler(w http.ResponseWriter, r *http.Request) {
+
+	_ = writeJSONResponse(w, http.StatusOK, []byte{})
 }

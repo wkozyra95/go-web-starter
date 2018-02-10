@@ -9,19 +9,16 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	conf "github.com/wkozyra95/go-web-starter/config"
 	"github.com/wkozyra95/go-web-starter/errors"
+	"github.com/wkozyra95/go-web-starter/model/mongo"
 	"gopkg.in/mgo.v2/bson"
 )
-
-type contextKeyType string
-
-const contextUserID contextKeyType = "userId"
 
 type jwtProvider struct {
 	jwtKey []byte
 	header string
 }
 
-func newJwtProvider(config conf.Config) (jwtProvider, error) {
+func newJwtProvider(config *conf.Config) (jwtProvider, error) {
 	const keySize = 64
 	jwtKey := make([]byte, keySize)
 	_, err := rand.Read(jwtKey)
@@ -29,7 +26,7 @@ func newJwtProvider(config conf.Config) (jwtProvider, error) {
 		return jwtProvider{}, err
 	}
 	return jwtProvider{
-		jwtKey: jwtKey,
+		jwtKey: []byte("rwfwer"),
 		header: "X-Auth-Token",
 	}, nil
 }
@@ -39,7 +36,7 @@ func (jp jwtProvider) generate(id bson.ObjectId) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 
 	claims["id"] = id
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 2400).Unix()
 
 	return token.SignedString(jp.jwtKey)
 }
@@ -51,7 +48,7 @@ func (jp jwtProvider) middleware(next http.Handler) http.Handler {
 		if token == "" {
 			log.Info("Missing auth token")
 			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
-				"reason": errors.ErrNotLoggedIn,
+				"reason": errors.NotLoggedIn.Error(),
 			})
 			return
 		}
@@ -63,15 +60,13 @@ func (jp jwtProvider) middleware(next http.Handler) http.Handler {
 			validationErr.Errors&jwt.ValidationErrorExpired != 0 {
 			log.Warn("token expired")
 			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
-				"reason": errors.ErrExpired,
+				"reason": errors.Expired.Error(),
 			})
 			return
 		}
 		if parseErr != nil {
-			log.Warn("Unable to parse token")
-			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
-				"reason": errors.ErrMalformed,
-			})
+			log.Warn("Unable to parse token %s", parseErr.Error())
+			handleRequestErr(w, errors.Malformed)
 			return
 		}
 
@@ -79,13 +74,19 @@ func (jp jwtProvider) middleware(next http.Handler) http.Handler {
 		if !parsed.Valid || !assertTypeOk {
 			log.Warn("Token is not valid")
 			_ = writeJSONResponse(w, http.StatusUnauthorized, map[string]string{
-				"reason": errors.ErrMalformed,
+				"reason": errors.Malformed.Error(),
 			})
 			return
 		}
 
-		idKey := contextUserID
-		idVal := claims["id"]
+		converted, convertErr := mongo.ConvertToObjectId(claims["id"].(string))
+		if convertErr != nil {
+			handleRequestErr(w, errors.Malformed)
+			return
+		}
+
+		idKey := contextUserIDKey
+		idVal := converted
 
 		ctx := context.WithValue(r.Context(), idKey, idVal)
 		next.ServeHTTP(w, r.WithContext(ctx))
